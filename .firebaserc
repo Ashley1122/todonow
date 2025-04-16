@@ -1,0 +1,15 @@
+{
+  "projects": {
+    "default": "gogodoz"
+  },
+  "targets": {
+    "gogodoz": {
+      "hosting": {
+        "gogodo": [
+          "gogodo"
+        ]
+      }
+    }
+  },
+  "etags": {}
+}

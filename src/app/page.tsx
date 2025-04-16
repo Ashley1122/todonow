@@ -12,13 +12,18 @@ import { Menubar, MenubarContent, MenubarItem, MenubarMenu, MenubarSeparator, Me
 import { TasksProvider } from '@/hooks/use-tasks';
 import { Button } from '@/components/ui/button';
 import { useState } from 'react';
-import {Dialog, DialogContent, DialogHeader, DialogTitle} from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 export default function Home() {
   const toast = useToast();
-  const { user, signOut } = useAuth();
+  const { user, signOut, loading: authLoading } = useAuth();
   const [openSignIn, setOpenSignIn] = useState(false);
   const [openSignUp, setOpenSignUp] = useState(false);
+
+  if (authLoading) {
+    return <div style={{ width: "100%", minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", textAlign: 'center' }}>Loading...</div>;
+  }
+
   return (
     <div className="container mx-auto p-4">
       {user ?

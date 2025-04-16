@@ -1,9 +1,9 @@
 'use client';
 
-import {Plus, Mic, MicOff} from 'lucide-react';
-import {useState, useEffect, useRef} from 'react';
+import { Plus, Mic, MicOff } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
 
-import {useTasks} from '@/hooks/use-tasks';
+import { useTasks } from '@/hooks/use-tasks';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { extractDateTime } from '@/ai/flows/extract-date-time';
@@ -14,7 +14,7 @@ function TaskInput() {
   const [description, setDescription] = useState('');
   const [isListening, setIsListening] = useState(false);
   const recognitionRef = useRef<SpeechRecognition | null>(null);
-  const {speak} = useSpeechSynthesis();
+  const { speak } = useSpeechSynthesis();
   let autoSubmitTimeout: NodeJS.Timeout | null = null;
 
   useEffect(() => {
@@ -26,23 +26,23 @@ function TaskInput() {
       newRecognition.continuous = false;
       newRecognition.interimResults = false;
 
-      newRecognition.onresult = async (event) => {
+      newRecognition.onresult = async (event: any) => {
         const transcript = event.results[0][0].transcript;
         setDescription(transcript);
-        handleSubmit();
+        handleSubmit(transcript);
       };
 
       newRecognition.onstart = () => setIsListening(true);
       newRecognition.onend = () => setIsListening(false);
 
-      newRecognition.onerror = (event) => console.error('Speech recognition error:', event);
+      newRecognition.onerror = (event: any) => console.error('Speech recognition error:', event);
       recognitionRef.current = newRecognition;
     }
     return () => {
       recognitionRef.current?.stop();
     };
   }, []);
-  const {addTask} = useTasks();
+  const { addTask } = useTasks();
 
   const handleVoiceInput = (): void => {
     if (!recognitionRef.current) return;
@@ -50,22 +50,28 @@ function TaskInput() {
     if (isListening) {
       recognitionRef.current.stop();
       setIsListening(false);
-        if (autoSubmitTimeout) {
-          clearTimeout(autoSubmitTimeout);
-          autoSubmitTimeout = null;
-        }
+      if (autoSubmitTimeout) {
+        clearTimeout(autoSubmitTimeout);
+        autoSubmitTimeout = null;
+      }
     } else {
       recognitionRef.current.start();
       setIsListening(true);
     }
   }
 
-  const handleSubmit = async (e?: React.FormEvent) => {
-    e?.preventDefault();
-    if (description.trim() === '') return;
+  const handleSubmit = async (e?: React.FormEvent | string) => {
+    if (e && typeof e !== 'string') {
+      e.preventDefault();
+    }
+    const value = typeof e === 'string' ? e.trim() : description.trim();
+    if (value === '') {
+      console.log(value);
+      return;
+    }
     else {
       try {
-        speak(`added ${description.trim()}`);
+        speak(`added ${value}`);
       } catch (error) {
         console.error('Error in speak function:', error);
       }
@@ -73,10 +79,10 @@ function TaskInput() {
 
     const currentDate = new Date().toISOString().split('T')[0];
     const dateTimeInfo = await extractDateTime({
-      taskDescription: description,
+      taskDescription: description || value,
       currentDate: currentDate
     });
-    addTask({description: description.trim(), ...dateTimeInfo});
+    addTask({ description: description.trim() || value, ...dateTimeInfo });
 
     setDescription('');
   };

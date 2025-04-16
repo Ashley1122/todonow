@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, createContext, useContext, useRef } from 'react';
 import { addTask as addTaskToDb, getTasks, updateTask as updateTaskInDb, deleteTask as deleteTaskFromDb } from '@/firebase/database';
-import { useAuth, type AuthContext } from '@/firebase/auth';
+import { GlobalUser } from '@/global/user-store';
 
 export interface Task {
   id: string;
@@ -21,12 +21,12 @@ const useTasksProvider = () => {
     return [];
   });
 
-  const { user, loading: authLoading }: AuthContext = useAuth();
+  const user = GlobalUser.getUser();
   const isInitialLoad = useRef(true);
 
   useEffect(() => {
     const loadTasks = async () => {
-      if (user && !authLoading) {
+      if (user) {
         try {
           const userTasks: Task[] = await getTasks(user.uid);
           setTasks(userTasks);
@@ -34,18 +34,25 @@ const useTasksProvider = () => {
           console.error("Error fetching tasks from Firebase:", error);
           // Handle error appropriately, e.g., display a toast
         }
-      } else if (!user && !authLoading) {
+      } else if (!user) {
         setTasks([]); // Clear tasks if no user is logged in
       }
     };
 
     loadTasks();
-  }, [user, authLoading]);
+  }, [user]);
 
   const addTask = async (task: Omit<Task, 'id'>) => {
+    console.log(user)
     if (user) {
-      const newTask = await addTaskToDb(user.uid, task);
-      setTasks((prevTasks) => [...prevTasks, newTask]);
+      try {
+        const newTask = await addTaskToDb(user.uid, task);
+        setTasks((prevTasks) => [...prevTasks, newTask]);
+      } catch (error) {
+        console.error('Error adding task to Firebase:', error);
+      }
+    } else {
+      console.error('No user found when trying to add task:', task);
     }
   };
 
@@ -94,7 +101,7 @@ export const TasksProvider = ({ children }: { children: React.ReactNode }) => {
 
   return (
     <TasksContext.Provider value={taskContextValue}>
-    { children }
+      {children}
     </TasksContext.Provider>
   );
 };

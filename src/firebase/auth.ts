@@ -8,6 +8,7 @@ import {
 } from "firebase/auth";
 import { useEffect, useState } from "react";
 import { app } from "./config";
+import { GlobalUser } from '@/global/user-store';
 
 const auth = getAuth(app);
 
@@ -18,20 +19,17 @@ export type AuthContext = {
   signIn: (email: string, password: string) => Promise<User | null>;
   signOut: () => Promise<void>;
 };
+
 export const useAuth = (): AuthContext  => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
-      if (user) {
-        setUser(user);
-      } else {
-        setUser(null);
-      }    
+      GlobalUser.setUser(user); // Update the global singleton
+      setUser(user);
       setLoading(false);
     });
-    
     return () => unsubscribe();    
   }, []);
 
@@ -42,6 +40,8 @@ export const useAuth = (): AuthContext  => {
         email,
         password
       );
+      GlobalUser.setUser(userCredential.user); // Update global
+      setUser(userCredential.user);            // Update local state
       return userCredential.user;
     } catch (error) {
       console.error("Error signing up:", error);
@@ -56,6 +56,8 @@ export const useAuth = (): AuthContext  => {
         email,
         password
       );
+      GlobalUser.setUser(userCredential.user); // Update global
+      setUser(userCredential.user);            // Update local state
       return userCredential.user;
     } catch (error) {
       console.error("Error signing in:", error);
@@ -66,6 +68,8 @@ export const useAuth = (): AuthContext  => {
   const signOut = async (): Promise<void> => {
     try {
       await firebaseSignOut(auth);
+      GlobalUser.setUser(null); // Clear global
+      setUser(null);            // Clear local state
     } catch (error) {
       console.error("Error signing out:", error);
       throw error;
